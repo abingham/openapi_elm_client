@@ -27,4 +27,3 @@ getWidgetsRequest toMsg =
       , expect = Http.expectJson toMsg (Json.Decode.list widgetDecoder) 
       }
 
--- TODO: Handle POST, PUT, etc.
