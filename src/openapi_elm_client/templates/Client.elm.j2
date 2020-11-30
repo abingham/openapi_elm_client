@@ -18,8 +18,8 @@ type alias {{ type_def | alias_name }} =
 -- Decoders
 
 {% for type_def in typedefs.values() %}
-{{ type_def | function_name }}Decoder : Json.Decode.Decoder {{ type_def | alias_name }}
-{{ type_def | function_name }}Decoder = 
+{{ type_def | json_decoder }} : Json.Decode.Decoder {{ type_def | alias_name }}
+{{ type_def | json_decoder }} = 
     Json.Decode.succeed {{ type_def | alias_name }}
 {% for property_def in type_def.properties.values() %}
     {% if property_def.required %}
