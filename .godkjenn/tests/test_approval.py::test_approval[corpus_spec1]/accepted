@@ -1,0 +1,30 @@
+module Test exposing (..)
+
+import Http
+import Json.Decode
+import Json.Decode.Pipeline
+
+-- Typedefs
+
+type alias Widget = 
+    { parts: List String
+    }
+
+
+-- Decoders
+
+widgetDecoder : Json.Decode.Decoder Widget
+widgetDecoder = 
+    Json.Decode.succeed Widget
+            |> Json.Decode.Pipeline.required "parts" (Json.Decode.list Json.Decode.string)
+    
+
+-- Remote calls
+getWidgetsRequest : (Result Http.Error (List Widget) -> msg) -> Cmd msg
+getWidgetsRequest toMsg =
+    Http.get
+      { url = "/api/v1/camera/"
+      , expect = Http.expectJson toMsg (Json.Decode.list widgetDecoder) 
+      }
+
+-- TODO: Handle POST, PUT, etc.

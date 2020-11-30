@@ -70,7 +70,7 @@ def _(primitivedef):
 
 @_def_to_elm_type.register(swagger_to.intermediate.Arraydef)
 def _(arraydef: swagger_to.intermediate.Arraydef):
-    return "List {}".format(arraydef.items.identifier)
+    return "List {}".format(_def_to_elm_type(arraydef.items))
 
 
 @_def_to_elm_type.register(swagger_to.intermediate.Objectdef)
@@ -99,7 +99,7 @@ def _decoder_name(identifier):
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Arraydef)
 def _(arraydef):
-    return "(Json.Decode.list {})".format(_decoder_name(arraydef.items.identifier))
+    return "(Json.Decode.list {})".format(_def_to_json_decoder_type(arraydef.items))
 
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Objectdef)
