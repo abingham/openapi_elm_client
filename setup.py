@@ -33,7 +33,7 @@ setup(
     extras_require={
         'dev': ['bumpversion'],
         # 'doc': ['sphinx', 'cartouche'],
-        'test': ['hypothesis', 'pytest'],
+        'test': ['godkjenn', 'pytest'],
     },
     entry_points={
         'console_scripts': [
