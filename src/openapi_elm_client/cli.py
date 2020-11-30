@@ -25,77 +25,125 @@ def write_elm_client(spec_file):
         swagger=swagger)
     intermediate_params = swagger_to.intermediate.to_parameters(
         swagger=swagger, typedefs=intermediate_typedefs)
+    intermediate_endpoints = swagger_to.intermediate.to_endpoints(
+        swagger=swagger,
+        typedefs=intermediate_typedefs,
+        params=intermediate_params)
 
     env = Environment(
         loader=PackageLoader('openapi_elm_client', 'templates'),
         trim_blocks=True,
     )
-    env.filters['type_name'] = _propertydef_to_elm_type
-    env.filters['json_decoder'] = _typedef_to_json_decoder_type
+    env.filters['pascal_case'] = _convert_to_pascal_case
     env.filters['camel_case'] = _convert_to_camel_case
+    env.filters['alias_name'] = lambda objdef: _convert_to_pascal_case(objdef.identifier)
+    env.filters['property_name'] = lambda propertydef: _convert_to_camel_case(propertydef.name)
+    env.filters['elm_type'] = _def_to_elm_type
+    env.filters['function_name'] = lambda d: _convert_to_camel_case(_def_to_function_name(d))
+    # env.filters['elm_identifier'] = _def_to_identifier
+    env.filters['json_decoder'] = _def_to_json_decoder_type
 
     template = env.get_template('Client.elm.j2')
-    output = template.render(typedefs=intermediate_typedefs)
+    output = template.render(
+        typedefs=intermediate_typedefs,
+        endpoints=intermediate_endpoints)
     print(output)
 
 
 @singledispatch
-def _typedef_to_json_decoder_type(typedef: swagger_to.intermediate.Typedef):
-    raise ValueError('No JSON typename generator for {}'.format(type(typedef)))
+def _def_to_elm_type(deftype):
+    raise TypeError('No elm-type converter for {}'.format(type(deftype)))
 
 
-JSON_TYPE_MAP = {
-    'string': 'Json.Decode.string',
-    'integer': 'Json.Decode.int',
-    'float': 'Json.Decode.float',
-    'number': 'Json.Decode.float',
-}
-
-
-@_typedef_to_json_decoder_type.register(swagger_to.intermediate.Primitivedef)
-def _(typedef):
-    return JSON_TYPE_MAP[typedef.type]
-
-
-@_typedef_to_json_decoder_type.register(swagger_to.intermediate.Arraydef)
-def _(arraydef):
-    return "(Json.Decode.list {}Decoder)".format(arraydef.items.identifier)
-
-
-def _propertydef_to_elm_type(property_def: swagger_to.intermediate.Propertydef):
-    typename = _typedef_to_elm_type(property_def.typedef)
-    if not property_def.required:
+@_def_to_elm_type.register(swagger_to.intermediate.Propertydef)
+def _(propertydef):
+    typename = _def_to_elm_type(propertydef.typedef)
+    if not propertydef.required:
         typename = 'Maybe ({})'.format(typename)
     return typename
 
 
-@singledispatch
-def _typedef_to_elm_type(typedef):
-    raise ValueError(
-        'No typename generator for {}'.format(type(typedef)))
-
-
-TYPE_MAP = {
-    'string': 'String',
-    'integer': 'Int',
-    'float': 'Float',
-    'number': 'Float'
-}
-
-
-@_typedef_to_elm_type.register(swagger_to.intermediate.Primitivedef)
+@_def_to_elm_type.register(swagger_to.intermediate.Primitivedef)
 def _(primitivedef):
-    return TYPE_MAP[primitivedef.type]
+    return {
+        'string': 'String',
+        'integer': 'Int',
+        'float': 'Float',
+        'number': 'Float'
+    }[primitivedef.type]
 
 
-@_typedef_to_elm_type.register(swagger_to.intermediate.Arraydef)
-def _(arraydef):
+@_def_to_elm_type.register(swagger_to.intermediate.Arraydef)
+def _(arraydef: swagger_to.intermediate.Arraydef):
     return "List {}".format(arraydef.items.identifier)
 
 
-def _convert_to_camel_case(value):
+@_def_to_elm_type.register(swagger_to.intermediate.Objectdef)
+def _(objectdef: swagger_to.intermediate.Objectdef):
+    return objectdef.identifier
+
+
+@singledispatch
+def _def_to_json_decoder_type(deftype):
+    raise ValueError('No JSON typename generator for {}'.format(type(deftype)))
+
+
+@_def_to_json_decoder_type.register(swagger_to.intermediate.Primitivedef)
+def _(typedef):
+    return {
+        'string': 'Json.Decode.string',
+        'integer': 'Json.Decode.int',
+        'float': 'Json.Decode.float',
+        'number': 'Json.Decode.float',
+    }[typedef.type]
+
+
+@_def_to_json_decoder_type.register(swagger_to.intermediate.Arraydef)
+def _(arraydef):
+    return "(Json.Decode.list {}Decoder)".format(arraydef.items.identifier)
+
+
+@_def_to_json_decoder_type.register(swagger_to.intermediate.Objectdef)
+def _(objectdef):
+    return _convert_to_camel_case("{}Decoder)".format(objectdef.identifier))
+
+
+@singledispatch
+def _def_to_function_name(typedef):
+    raise ValueError(
+        'No function name generator for {}'.format(type(typedef)))
+
+
+@_def_to_function_name.register(swagger_to.intermediate.Primitivedef)
+def _(primitivedef):
+    return primitivedef.identifier
+
+
+# @_def_to_identifier.register(swagger_to.intermediate.Arraydef)
+# def _(arraydef):
+#     return "List {}".format(arraydef.items.identifier)
+
+
+@_def_to_function_name.register(swagger_to.intermediate.Objectdef)
+def _(objectdef: swagger_to.intermediate.Objectdef):
+    return objectdef.identifier
+
+
+def _convert_to_pascal_case(value):
     for separator in {'-', '.'}:
         value = value.replace(separator, '_')
     elements = value.split('_')
-    elements = elements[:1] + [e.capitalize() for e in elements[1:]]
-    return ''.join(elements)
+    return ''.join(map(_upper_first_letter, elements))
+
+
+def _convert_to_camel_case(value):
+    pc = _convert_to_pascal_case(value)
+    return _lower_first_letter(pc)
+
+
+def _upper_first_letter(value):
+    return ''.join([c.upper() for c in value[:1]]) + value[1:]
+
+
+def _lower_first_letter(value):
+    return ''.join([c.lower() for c in value[:1]]) + value[1:]

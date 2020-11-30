@@ -5,10 +5,10 @@ import Json.Decode.Pipeline
 
 -- Typedefs
 
-{% for type_name, obj_def in typedefs.items() %}
-type alias {{ type_name }} = 
-{% for property_name, property_def in obj_def.properties.items() %}
-    {% if loop.first %}{ {% else %}, {% endif %}{{ property_name | camel_case }}: {{ property_def | type_name }}
+{% for obj_def in typedefs.values() %}
+type alias {{ obj_def | alias_name }} = 
+{% for property_def in obj_def.properties.values() %}
+    {% if loop.first %}{ {% else %}, {% endif %}{{ property_def | property_name }}: {{ property_def | elm_type }}
 {% endfor %}
     }
 
@@ -16,17 +16,30 @@ type alias {{ type_name }} =
 
 -- Decoders
 
-{% for type_name, obj_def in typedefs.items() %}
-{{ type_name }}Decoder : Json.Decode.Decoder {{ type_name }}
-{{ type_name }}Decoder = 
-    Json.Decode.success {{ type_name }}
-{% for property_name, property_def in obj_def.properties.items() %}
+{% for obj_def in typedefs.values() %}
+{{ obj_def | function_name }}Decoder : Json.Decode.Decoder {{ obj_def | alias_name }}
+{{ obj_def | function_name }}Decoder = 
+    Json.Decode.success {{ obj_def | alias_name }}
+{% for property_def in obj_def.properties.values() %}
     {% if property_def.required %}
-        |> Json.Decode.Pipeline.required "{{ property_name }}" {{ property_def.typedef | json_decoder }}
+        |> Json.Decode.Pipeline.required "{{ property_def.name }}" {{ property_def.typedef | json_decoder }}
     {% else %}
-        |> Json.Decode.Pipeline.optional "{{ property_name }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
+        |> Json.Decode.Pipeline.optional "{{ property_def.name }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
     {% endif %}
 {% endfor %}
 
 {% endfor %}
 
+-- Remote calls
+{% for endpoint in endpoints %}
+{% if endpoint.method == 'get' %}
+{{ endpoint.operation_id | camel_case }}Request : (Result Http.Error {{ endpoint.responses['200'].typedef | alias_name}} -> msg) -> Cmd msg
+{{ endpoint.operation_id | camel_case }}Request toMsg =
+    Http.get
+      { url = {{ endpoint.path }}
+      , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
+      }
+{% endif %}
+
+{% endfor %}
+-- TODO: Handle POST, PUT, etc.
