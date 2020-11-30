@@ -1,5 +1,6 @@
-module Client exposing (..)
+module {{ module_name }} exposing (..)
 
+import Http
 import Json.Decode
 import Json.Decode.Pipeline
 
@@ -19,7 +20,7 @@ type alias {{ obj_def | alias_name }} =
 {% for obj_def in typedefs.values() %}
 {{ obj_def | function_name }}Decoder : Json.Decode.Decoder {{ obj_def | alias_name }}
 {{ obj_def | function_name }}Decoder = 
-    Json.Decode.success {{ obj_def | alias_name }}
+    Json.Decode.succeed {{ obj_def | alias_name }}
 {% for property_def in obj_def.properties.values() %}
     {% if property_def.required %}
         |> Json.Decode.Pipeline.required "{{ property_def.name }}" {{ property_def.typedef | json_decoder }}
@@ -36,7 +37,7 @@ type alias {{ obj_def | alias_name }} =
 {{ endpoint.operation_id | camel_case }}Request : (Result Http.Error {{ endpoint.responses['200'].typedef | alias_name}} -> msg) -> Cmd msg
 {{ endpoint.operation_id | camel_case }}Request toMsg =
     Http.get
-      { url = {{ endpoint.path }}
+      { url = "{{ endpoint.path }}"
       , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
       }
 {% endif %}

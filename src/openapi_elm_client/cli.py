@@ -11,12 +11,13 @@ log = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('spec-file', type=click.Path(exists=True, dir_okay=False, readable=True, file_okay=True))
-def main(spec_file):
-    write_elm_client(spec_file)
+@click.argument('module-name')
+def main(spec_file, module_name):
+    write_elm_client(spec_file, module_name)
     return 0
 
 
-def write_elm_client(spec_file):
+def write_elm_client(spec_file, module_name):
     swagger, errs = swagger_to.swagger.parse_yaml_file(path=spec_file)
     if errs:
         raise ValueError('Error parsing spec: {}'.format(errs))
@@ -45,6 +46,7 @@ def write_elm_client(spec_file):
 
     template = env.get_template('Client.elm.j2')
     output = template.render(
+        module_name=module_name,
         typedefs=intermediate_typedefs,
         endpoints=intermediate_endpoints)
     print(output)
@@ -98,14 +100,18 @@ def _(typedef):
     }[typedef.type]
 
 
+def _decoder_name(identifier):
+    return _convert_to_camel_case("{}Decoder".format(identifier))
+
+
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Arraydef)
 def _(arraydef):
-    return "(Json.Decode.list {}Decoder)".format(arraydef.items.identifier)
+    return "(Json.Decode.list {})".format(_decoder_name(arraydef.items.identifier))
 
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Objectdef)
 def _(objectdef):
-    return _convert_to_camel_case("{}Decoder)".format(objectdef.identifier))
+    return _decoder_name(objectdef.identifier)
 
 
 @singledispatch
