@@ -6,9 +6,9 @@ import Json.Decode.Pipeline
 
 -- Typedefs
 
-{% for obj_def in typedefs.values() %}
-type alias {{ obj_def | alias_name }} = 
-{% for property_def in obj_def.properties.values() %}
+{% for type_def in typedefs.values() %}
+type alias {{ type_def | alias_name }} = 
+{% for property_def in type_def.properties.values() %}
     {% if loop.first %}{ {% else %}, {% endif %}{{ property_def | property_name }}: {{ property_def | elm_type }}
 {% endfor %}
     }
@@ -17,11 +17,11 @@ type alias {{ obj_def | alias_name }} =
 
 -- Decoders
 
-{% for obj_def in typedefs.values() %}
-{{ obj_def | function_name }}Decoder : Json.Decode.Decoder {{ obj_def | alias_name }}
-{{ obj_def | function_name }}Decoder = 
-    Json.Decode.succeed {{ obj_def | alias_name }}
-{% for property_def in obj_def.properties.values() %}
+{% for type_def in typedefs.values() %}
+{{ type_def | function_name }}Decoder : Json.Decode.Decoder {{ type_def | alias_name }}
+{{ type_def | function_name }}Decoder = 
+    Json.Decode.succeed {{ type_def | alias_name }}
+{% for property_def in type_def.properties.values() %}
     {% if property_def.required %}
         |> Json.Decode.Pipeline.required "{{ property_def.name }}" {{ property_def.typedef | json_decoder }}
     {% else %}
