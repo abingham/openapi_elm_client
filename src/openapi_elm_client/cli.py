@@ -32,6 +32,7 @@ def write_elm_client(spec_file):
     )
     env.filters['type_name'] = _propertydef_to_elm_type
     env.filters['json_decoder'] = _typedef_to_json_decoder_type
+    env.filters['camel_case'] = _convert_to_camel_case
 
     template = env.get_template('Client.elm.j2')
     output = template.render(typedefs=intermediate_typedefs)
@@ -90,3 +91,11 @@ def _(primitivedef):
 @_typedef_to_elm_type.register(swagger_to.intermediate.Arraydef)
 def _(arraydef):
     return "List {}".format(arraydef.items.identifier)
+
+
+def _convert_to_camel_case(value):
+    for separator in {'-', '.'}:
+        value = value.replace(separator, '_')
+    elements = value.split('_')
+    elements = elements[:1] + [e.capitalize() for e in elements[1:]]
+    return ''.join(elements)

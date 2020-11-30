@@ -7,32 +7,26 @@ import Json.Decode.Pipeline
 
 {% for type_name, obj_def in typedefs.items() %}
 type alias {{ type_name }} = 
-{% for property, property_def in obj_def.properties.items() %}
-    {% if loop.first %}{ {% else %}, {% endif %}{{ property }}: {{ property_def | type_name }}
+{% for property_name, property_def in obj_def.properties.items() %}
+    {% if loop.first %}{ {% else %}, {% endif %}{{ property_name | camel_case }}: {{ property_def | type_name }}
 {% endfor %}
     }
 
+{% endfor %}
+
 -- Decoders
--- TODO: Handle optional properties
 
 {% for type_name, obj_def in typedefs.items() %}
 {{ type_name }}Decoder : Json.Decode.Decoder {{ type_name }}
 {{ type_name }}Decoder = 
     Json.Decode.success {{ type_name }}
-{% for property, property_def in obj_def.properties.items() %}
+{% for property_name, property_def in obj_def.properties.items() %}
     {% if property_def.required %}
-        |> Json.Decode.Pipeline.required "{{ property }}" {{ property_def.typedef | json_decoder }}
+        |> Json.Decode.Pipeline.required "{{ property_name }}" {{ property_def.typedef | json_decoder }}
     {% else %}
-        |> Json.Decode.Pipeline.optional "{{ property }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
+        |> Json.Decode.Pipeline.optional "{{ property_name }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
     {% endif %}
 {% endfor %}
-    }
-{% endfor %}
-
--- {# decodeSub : Json.Decode.Decoder Sub
--- decodeSub =
---     Json.Decode.Pipeline.decode Sub
---         |> Json.Decode.Pipeline.optional "base_prop" (Json.Decode.nullable Json.Decode.int) Nothing
---         |> Json.Decode.Pipeline.optional "sub_prop" (Json.Decode.nullable Json.Decode.int) Nothing #}
 
 {% endfor %}
+
