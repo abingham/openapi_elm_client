@@ -1,5 +1,5 @@
 import logging
-from functools import singledispatch
+from functools import singledispatch, wraps
 
 import swagger_to.intermediate
 from jinja2 import Environment, PackageLoader
@@ -50,6 +50,11 @@ def _def_to_elm_type(deftype):
     raise TypeError('No elm-type converter for {}'.format(type(deftype)))
 
 
+@_def_to_elm_type.register(swagger_to.intermediate.AnyValuedef)
+def _(anyvalue):
+    log.warning('No implementation of _def_to_elm_type for AnyValue')
+
+
 @_def_to_elm_type.register(swagger_to.intermediate.Propertydef)
 def _(propertydef):
     typename = _def_to_elm_type(propertydef.typedef)
@@ -81,6 +86,11 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
 @singledispatch
 def _def_to_json_decoder_type(deftype):
     raise ValueError('No JSON typename generator for {}'.format(type(deftype)))
+
+
+@_def_to_json_decoder_type.register(swagger_to.intermediate.AnyValuedef)
+def _(anyvalue):
+    log.warning('No _def_to_json_decoder_type for AnyValuedef')
 
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Primitivedef)
@@ -128,6 +138,23 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
     return objectdef.identifier
 
 
+def _valid_elm(f):
+    """Attempt to create a valid Elm identifier from a string.
+    
+    This replaces illegal characters with legal onces. 
+    """
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        result = f(*args, **kwargs)
+        # TODO: More replacements.
+        result = result.replace('@', 'atsign_')
+        if result == 'type':
+            result = 'type_'
+        return result
+    return wrapper
+
+
+@_valid_elm
 def _convert_to_pascal_case(value):
     for separator in {'-', '.'}:
         value = value.replace(separator, '_')
@@ -135,6 +162,7 @@ def _convert_to_pascal_case(value):
     return ''.join(map(_upper_first_letter, elements))
 
 
+@_valid_elm
 def _convert_to_camel_case(value):
     pc = _convert_to_pascal_case(value)
     return _lower_first_letter(pc)
