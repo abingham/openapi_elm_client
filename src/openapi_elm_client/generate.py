@@ -39,7 +39,7 @@ def generate_elm_client(spec_file, module_name):
     env.filters['endpoint_arg_types'] = _endpoint_arg_types
     env.filters['endpoint_arg_names'] = _endpoint_arg_names
     env.filters['endpoint_url'] = _endpoint_url
-    env.filters['endpoint_url_params'] = _endpoint_url_params
+    env.filters['endpoint_query_type'] = _primitivedef_to_url_query_type
 
     template = env.get_template('Client.elm.j2')
     client_code = template.render(
@@ -63,6 +63,14 @@ def _(anyvalue):
 def _(propertydef):
     typename = _def_to_elm_type(propertydef.typedef)
     if not propertydef.required:
+        typename = 'Maybe ({})'.format(typename)
+    return typename
+
+
+@_def_to_elm_type.register(swagger_to.intermediate.Parameter)
+def _(parameter):
+    typename = _def_to_elm_type(parameter.typedef)
+    if not parameter.required:
         typename = 'Maybe ({})'.format(typename)
     return typename
 
@@ -145,7 +153,7 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
 def _endpoint_arg_types(endpoint):
     def make_type_specs():
         for parameter in endpoint.parameters:
-            yield _def_to_elm_type(parameter.typedef)
+            yield _def_to_elm_type(parameter)
             yield '->'
     return ' '.join(make_type_specs())
 
@@ -170,8 +178,32 @@ def _endpoint_url(endpoint):
     return ', '.join(resolve_component(c) for c in components)
 
 
-def _endpoint_url_params(endpoint):
-    return "TODO!!!"
+def _primitivedef_to_url_query_type(primitivedef):
+    try:
+        return {
+            'string': 'Url.Builder.string',
+            'integer': 'Url.Builder.int',
+        }[primitivedef.type]
+    except KeyError:
+        raise KeyError(f'parameters of type {primitivedef.type} are not supported as query parameters')
+
+
+# def _endpoint_url_params(endpoint):
+#     # TODO: Need to handle Maybe's correctly.
+#     query_parameters = [p for p in endpoint.parameters if p.in_what == 'query']
+#     return ', '.join(
+#         f'{_primitivedef_to_url_query_type(p.typedef)} "{p.name}" {_convert_to_camel_case(p.name)}'
+#         for p in query_parameters)
+
+# def _endpoint_query_param(parameter):
+#     query_type = _primitivedef_to_url_query_type(parameter.typedef)
+#     cc_name = _convert_to_camel_case(parameter.name)
+#     if parameter.required:
+#         return f'Just ({query_type} "{parameter.name}" {cc_name})'
+#     else:
+#         return f"""case {cc_name} of
+#     Just val -> Just ({query_type} "{parameter.name}" val)
+#     Nothing  -> Nothing""" 
 
 
 def _valid_elm(f):

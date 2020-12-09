@@ -3,6 +3,7 @@ module {{ module_name }} exposing (..)
 import Http
 import Json.Decode
 import Json.Decode.Pipeline
+import Maybe.Extra
 import Url.Builder
 
 -- Typedefs
@@ -37,8 +38,21 @@ type alias {{ type_def | alias_name }} =
 {% if endpoint.method == 'get' %}
 {{ endpoint.operation_id | camel_case }}Request :  {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['200'].typedef | elm_type}}) -> msg) -> Cmd msg
 {{ endpoint.operation_id | camel_case }}Request {{ endpoint | endpoint_arg_names }} toMsg =
+    let
+        queryParams = [
+        {%for parameter in endpoint.parameters %}
+        {% if parameter.required %}
+            Just ({{ parameter.typedef | endpoint_query_type }} "{{parameter.name}}" {{ parameter.name | camel_case}}),
+        {% else %}
+            case {{ parameter.name | camel_case }} of
+                Just val -> Just ({{ parameter.typedef | endpoint_query_type }} "{{parameter.name}}" val)
+                Nothing -> Nothing,
+        {% endif %}
+        {% endfor %}
+        ] |> Maybe.Extra.values
+    in
     Http.get
-      { url = Url.Builder.absolute [{{ endpoint | endpoint_url }}] [{{ endpoint | endpoint_url_params }}]
+      { url = Url.Builder.absolute [{{ endpoint | endpoint_url }}] queryParams 
       , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
       }
 {% endif %}
