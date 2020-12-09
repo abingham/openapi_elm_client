@@ -10,3 +10,7 @@ def main(spec_file, module_name):
     code = generate_elm_client(spec_file, module_name)
     print(code)
     return 0
+
+
+if __name__ == '__main__':
+    main()
