@@ -3,6 +3,7 @@ module {{ module_name }} exposing (..)
 import Http
 import Json.Decode
 import Json.Decode.Pipeline
+import Url.Builder
 
 -- Typedefs
 
@@ -34,10 +35,10 @@ type alias {{ type_def | alias_name }} =
 -- Remote calls
 {% for endpoint in endpoints %}
 {% if endpoint.method == 'get' %}
-{{ endpoint.operation_id | camel_case }}Request : (Result Http.Error ({{ endpoint.responses['200'].typedef | elm_type}}) -> msg) -> Cmd msg
-{{ endpoint.operation_id | camel_case }}Request toMsg =
+{{ endpoint.operation_id | camel_case }}Request :  {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['200'].typedef | elm_type}}) -> msg) -> Cmd msg
+{{ endpoint.operation_id | camel_case }}Request {{ endpoint | endpoint_arg_names }} toMsg =
     Http.get
-      { url = "{{ endpoint.path }}"
+      { url = Url.Builder.absolute [{{ endpoint | endpoint_url }}] [{{ endpoint | endpoint_url_params }}]
       , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
       }
 {% endif %}

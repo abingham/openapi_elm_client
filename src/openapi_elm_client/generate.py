@@ -36,6 +36,10 @@ def generate_elm_client(spec_file, module_name):
         _def_to_function_name(d))
     # env.filters['elm_identifier'] = _def_to_identifier
     env.filters['json_decoder'] = _def_to_json_decoder_type
+    env.filters['endpoint_arg_types'] = _endpoint_arg_types
+    env.filters['endpoint_arg_names'] = _endpoint_arg_names
+    env.filters['endpoint_url'] = _endpoint_url
+    env.filters['endpoint_url_params'] = _endpoint_url_params
 
     template = env.get_template('Client.elm.j2')
     client_code = template.render(
@@ -138,9 +142,41 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
     return objectdef.identifier
 
 
+def _endpoint_arg_types(endpoint):
+    def make_type_specs():
+        for parameter in endpoint.parameters:
+            yield _def_to_elm_type(parameter.typedef)
+            yield '->'
+    return ' '.join(make_type_specs())
+
+
+def _endpoint_arg_names(endpoint):
+    names = (_convert_to_camel_case(p.name) for p in endpoint.parameters)
+    return ' '.join(names)
+
+
+def _endpoint_url(endpoint):
+    path_parameters = [
+        p.name for p in endpoint.parameters if p.in_what == 'path']
+
+    def resolve_component(component):
+        for param in path_parameters:
+            if component == '{' + param + '}':
+                return _convert_to_camel_case(param)
+
+        return f'"{component}"'
+
+    components = [c for c in endpoint.path.split('/') if c]
+    return ', '.join(resolve_component(c) for c in components)
+
+
+def _endpoint_url_params(endpoint):
+    return "TODO!!!"
+
+
 def _valid_elm(f):
     """Attempt to create a valid Elm identifier from a string.
-    
+
     This replaces illegal characters with legal onces. 
     """
     @wraps(f)
