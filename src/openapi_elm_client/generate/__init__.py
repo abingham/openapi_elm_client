@@ -21,9 +21,13 @@ def generate_elm_client(spec_file, module_name):
     intermediate_params = swagger_to.intermediate.to_parameters(
         swagger=swagger, typedefs=intermediate_typedefs)
     intermediate_endpoints = swagger_to.intermediate.to_endpoints(
-        swagger=swagger,
-        typedefs=intermediate_typedefs,
-        params=intermediate_params)
+            swagger=swagger,
+            typedefs=intermediate_typedefs,
+            params=intermediate_params)
+    json_endpoints = [
+        endpoint for endpoint in intermediate_endpoints
+        if not endpoint.produces or 'application/json' in endpoint.produces
+    ]
 
     env = Environment(
         loader=PackageLoader('openapi_elm_client', 'templates'),
@@ -49,6 +53,6 @@ def generate_elm_client(spec_file, module_name):
     client_code = template.render(
         module_name=module_name,
         typedefs=intermediate_typedefs,
-        endpoints=intermediate_endpoints)
+        endpoints=json_endpoints)
     return client_code
 
