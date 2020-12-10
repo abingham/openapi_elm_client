@@ -51,4 +51,12 @@ def _(arraydef: swagger_to.intermediate.Arraydef):
 
 @def_to_elm_type.register(swagger_to.intermediate.Objectdef)
 def _(objectdef: swagger_to.intermediate.Objectdef):
-    return objectdef.identifier
+    if objectdef.identifier:
+        return objectdef.identifier
+
+    properties = (f"{property.name}: {def_to_elm_type(property)}"
+                  for property in objectdef.properties.values())
+
+    properties = ", ".join(properties)
+
+    return "{" + properties + "}" 

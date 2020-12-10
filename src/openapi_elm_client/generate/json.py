@@ -6,7 +6,7 @@ from functools import singledispatch
 
 import swagger_to.intermediate
 
-from .common import convert_to_camel_case
+from .common import convert_to_camel_case, convert_to_pascal_case
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +18,14 @@ def typedef_to_encoder(typedef):
     This could be either a type name (i.e. for a generated encoder) or just standalone encoding code.
     """
     raise ValueError('No JSON encoder generator for {}'.format(type(typedef)))
+
+
+@typedef_to_encoder.register(swagger_to.intermediate.Parameter)
+def _(parameter):
+    if parameter.required:
+        return typedef_to_encoder(parameter.typedef)
+    
+    return f"Maybe.andThen (\\x -> Just ({typedef_to_encoder(parameter.typedef, 'x')})) |> Maybe.withDefault Json.Encode.null"
 
 
 @typedef_to_encoder.register(swagger_to.intermediate.Primitivedef)
@@ -35,18 +43,15 @@ def _(objectdef):
     def make_properties():
         for property in objectdef.properties.values():
             if property.required:
-                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} obj.{convert_to_camel_case(property.name)})'
+                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} x.{convert_to_camel_case(property.name)})'
             else:
-                yield f"""case obj.{convert_to_camel_case(property.name)} of
-                    Just val -> Just ("{property.name}", {typedef_to_encoder(property.typedef)} obj.{convert_to_camel_case(property.name)})
+                yield f"""case x.{convert_to_camel_case(property.name)} of
+                    Just val -> Just ("{property.name}", {typedef_to_encoder(property.typedef)} val)
                     Nothing -> Nothing"""
 
-    properties = ',\n'.join(make_properties())
+    properties = ', '.join(make_properties())
     
-    return f"""[
-        {properties}
-    ] |> Maybe.Extra.values |> Json.Encode.object
-    """
+    return f"(\\x -> [ {properties} ] |> Maybe.Extra.values |> Json.Encode.object)"
 
 
 def _encoder_name(identifier):
@@ -83,9 +88,16 @@ def _decoder_name(identifier):
 
 @typedef_to_decoder.register(swagger_to.intermediate.Arraydef)
 def _(arraydef):
-    return "(Json.Decode.list {})".format(typedef_to_decoder(arraydef.items))
+    return "({} |> Json.Decode.list)".format(typedef_to_decoder(arraydef.items))
 
 
 @typedef_to_decoder.register(swagger_to.intermediate.Objectdef)
 def _(objectdef):
-    return _decoder_name(objectdef.json_schema.identifier)
+    def make_parameters():
+        for property in objectdef.properties.values():
+            if property.required:
+                yield f'|> Json.Decode.Pipeline.required "{property.name}" {typedef_to_decoder(property.typedef)}'
+
+    parameters = ' '.join(make_parameters())
+
+    return f"(Json.Decode.succeed {convert_to_pascal_case(objectdef.identifier)} {parameters})"

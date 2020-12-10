@@ -25,7 +25,7 @@
             ] |> Maybe.Extra.values
 
         decoder =
-            {{ json_decoder(endpoint.responses['200']) }}
+            {{ endpoint.responses['200'].typedef | json_decoder() }}
     in
     Http.get
       { url = Url.Builder.relative [baseUrl, {{ endpoint | endpoint_url }}] queryParams 
