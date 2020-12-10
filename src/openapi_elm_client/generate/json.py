@@ -51,6 +51,7 @@ def _(objectdef):
 
     properties = ', '.join(make_properties())
     
+    # TODO: When we use variables like this, we should probably generate unique ones for each instance. Otherwise we might face collisions.
     return f"(\\x -> [ {properties} ] |> Maybe.Extra.values |> Json.Encode.object)"
 
 
