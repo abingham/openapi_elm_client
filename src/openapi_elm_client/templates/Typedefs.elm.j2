@@ -1,0 +1,11 @@
+-- Typedefs
+
+{% for type_def in typedefs.values() %}
+type alias {{ type_def | alias_name }} = 
+{% for property_def in type_def.properties.values() %}
+    {% if loop.first %}{ {% else %}, {% endif %}{{ property_def | property_name }}: {{ property_def | elm_type }}
+{% endfor %}
+    }
+
+{% endfor %}
+

@@ -1,0 +1,32 @@
+{# Render GET endpoints #}
+
+-- GET endpoints
+
+{% for endpoint in endpoints %}
+{% if endpoint.method == 'get' %}
+
+{{ endpoint.operation_id | camel_case }}Request :  String -> {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['200'].typedef | elm_type}}) -> msg) -> Cmd msg
+{{ endpoint.operation_id | camel_case }}Request baseUrl {{ endpoint | endpoint_arg_names }} toMsg =
+    let
+        queryParams = [
+{% for parameter in endpoint.parameters %}
+{% if parameter.in_what == 'query' %}
+{% if parameter.required %}
+            Just ({{ parameter.typedef | endpoint_query_type }} "{{parameter.name}}" {{ parameter.name | camel_case}}){% if not loop.last %},{% endif %}
+
+{% else %}
+            case {{ parameter.name | camel_case }} of
+                Just val -> Just ({{ parameter.typedef | endpoint_query_type }} "{{parameter.name}}" val)
+                Nothing -> Nothing{% if not loop.last %},{% endif %} 
+
+{% endif %}
+{% endif %}
+{% endfor %}
+            ] |> Maybe.Extra.values
+    in
+    Http.get
+      { url = Url.Builder.relative [baseUrl, {{ endpoint | endpoint_url }}] queryParams 
+      , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
+      }
+{% endif %}
+{% endfor %}

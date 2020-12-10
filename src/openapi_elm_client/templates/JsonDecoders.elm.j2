@@ -1,0 +1,16 @@
+-- JSON decoders
+
+{% for type_def in typedefs.values() %}
+{{ type_def | json_decoder }} : Json.Decode.Decoder {{ type_def | alias_name }}
+{{ type_def | json_decoder }} = 
+    Json.Decode.succeed {{ type_def | alias_name }}
+{% for property_def in type_def.properties.values() %}
+    {% if property_def.required %}
+        |> Json.Decode.Pipeline.required "{{ property_def.name }}" {{ property_def.typedef | json_decoder }}
+    {% else %}
+        |> Json.Decode.Pipeline.optional "{{ property_def.name }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
+    {% endif %}
+{% endfor %}
+
+{% endfor %}
+

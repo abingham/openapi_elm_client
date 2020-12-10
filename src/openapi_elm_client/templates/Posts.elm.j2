@@ -1,0 +1,30 @@
+{# Generate POST endpoints #}
+
+-- POST endpoints
+
+{% for endpoint in endpoints %}
+{% if endpoint.method == 'post' %}
+
+{{ endpoint.operation_id | camel_case }} : String -> {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['201'].typedef | elm_type}}) -> msg) -> Cmd msg
+{{ endpoint.operation_id | camel_case }} baseUrl {{ endpoint | endpoint_arg_names }} toMsg =
+    let
+        payload =
+            Json.Encode.object
+                [ 
+{% for parameter in endpoint.parameters %}
+                    ("{{ parameter.name | camel_case }}", {{ parameter.typedef | json_encoder }} {{ parameter.name | camel_case}})
+{% endfor %}
+                    
+                -- ( "cameraId", Json.Encode.string (cameraId source) )
+                -- , ( "sourceName", Json.Encode.string (sourceName source) )
+                ]
+        body =
+            Http.jsonBody payload
+        url =
+            Url.Builder.relative [ baseUrl, {{ endpoint | endpoint_url }} ] []
+    in
+    Http.post { body = body, url = url, expect = Http.expectJson toMsg {{ endpoint.responses['201'].typedef | json_decoder }} }
+
+{% endif %}
+
+{% endfor %}
