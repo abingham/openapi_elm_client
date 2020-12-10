@@ -1,0 +1,49 @@
+basePath: /api/v1/widget
+consumes:
+  - application/json
+definitions:
+  Widget:
+    properties:
+      widget_id:
+        type: string
+    required:
+      - widget_id
+info:
+  description: Testing
+  title: Testing
+  version: "1.0"
+paths:
+  /:
+    post:
+      operationId: widgets.new_widget
+      parameters:
+        - in: body
+          name: widget stuff
+          description: The new widget
+          schema:
+            $ref: '#/definitions/Widget'
+            # type: object
+            # required:
+            #   - widgetId
+            #   - name
+            #   - size
+            # properties:
+            #   widgetId:
+            #     type: string
+            #   name:
+            #     type: string
+            #   size:
+            #     type: integer
+      responses:
+        '201':
+          description: Widget created
+          schema:
+            $ref: '#/definitions/Widget'
+      summary: Created a new widget
+      tags:
+      - widgets
+produces:
+  - application/json
+swagger: "2.0"
+tags:
+  - name: test

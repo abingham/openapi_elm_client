@@ -2,6 +2,7 @@ module {{ module_name }} exposing (..)
 
 import Http
 import Json.Decode
+import Json.Encode
 import Json.Decode.Pipeline
 import Maybe.Extra
 import Url.Builder
@@ -17,7 +18,7 @@ type alias {{ type_def | alias_name }} =
 
 {% endfor %}
 
--- Decoders
+-- Decoders / Encoders
 
 {% for type_def in typedefs.values() %}
 {{ type_def | json_decoder }} : Json.Decode.Decoder {{ type_def | alias_name }}
@@ -30,6 +31,17 @@ type alias {{ type_def | alias_name }} =
         |> Json.Decode.Pipeline.optional "{{ property_def.name }}" (Json.Decode.nullable {{ property_def.typedef | json_decoder }}) Nothing
     {% endif %}
 {% endfor %}
+
+{{ type_def | json_encoder }} : Json.Encode.Encoder {{ type_def | alias_name }}
+{{ type_def | json_encoder }} obj =
+    Json.Encode.object [
+{% for property_def in type_def.properties.values() %}
+{% if property_def.required %}
+    ("{{ property_def.name }}", {{ property_def.typedef | json_encoder }} obj.{{ property_def.name | camel_case }})
+{% else %}
+{% endif %}
+{% endfor %}
+    ]
 
 {% endfor %}
 
@@ -59,6 +71,29 @@ type alias {{ type_def | alias_name }} =
       { url = Url.Builder.relative [baseUrl, {{ endpoint | endpoint_url }}] queryParams 
       , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
       }
+
+{% elif endpoint.method == 'post' %}
+
+{{ endpoint.operation_id | camel_case }} : String -> {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['201'].typedef | elm_type}}) -> msg) -> Cmd msg
+{{ endpoint.operation_id | camel_case }} baseUrl {{ endpoint | endpoint_arg_names }} toMsg =
+    let
+        payload =
+            Json.Encode.object
+                [ 
+{% for parameter in endpoint.parameters %}
+                    ("{{ parameter.name | camel_case }}", {{ parameter.typedef | json_encoder }} {{ parameter.name | camel_case}})
+{% endfor %}
+                    
+                -- ( "cameraId", Json.Encode.string (cameraId source) )
+                -- , ( "sourceName", Json.Encode.string (sourceName source) )
+                ]
+        body =
+            Http.jsonBody payload
+        url =
+            Url.Builder.relative [ baseUrl, {{ endpoint | endpoint_url }} ] []
+    in
+    Http.post { body = body, url = url, expect = Http.expectJson toMsg {{ endpoint.responses['201'].typedef | json_decoder }} }
+
 {% endif %}
 
 {% endfor %}

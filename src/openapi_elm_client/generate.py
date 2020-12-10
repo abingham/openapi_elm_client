@@ -36,6 +36,7 @@ def generate_elm_client(spec_file, module_name):
         _def_to_function_name(d))
     # env.filters['elm_identifier'] = _def_to_identifier
     env.filters['json_decoder'] = _def_to_json_decoder_type
+    env.filters['json_encoder'] = _def_to_json_encoder_type
     env.filters['endpoint_arg_types'] = _endpoint_arg_types
     env.filters['endpoint_arg_names'] = _endpoint_arg_names
     env.filters['endpoint_url'] = _endpoint_url
@@ -96,8 +97,32 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
 
 
 @singledispatch
+def _def_to_json_encoder_type(deftype):
+    raise ValueError('No JSON encoder generator for {}'.format(type(deftype)))
+
+
+@_def_to_json_encoder_type.register(swagger_to.intermediate.Primitivedef)
+def _(primitivedef):
+    return {
+        'string': 'Json.Encode.string',
+        'integer': 'Json.Encode.int',
+        'float': 'Json.Encode.float',
+        'number': 'Json.Encode.float',
+    }[primitivedef.type]
+ 
+
+@_def_to_json_encoder_type.register(swagger_to.intermediate.Objectdef)
+def _(objectdef):
+    return _encoder_name(objectdef.json_schema.identifier)
+
+
+def _encoder_name(identifier):
+    return _convert_to_camel_case("{}Encoder".format(identifier))
+
+
+@singledispatch
 def _def_to_json_decoder_type(deftype):
-    raise ValueError('No JSON typename generator for {}'.format(type(deftype)))
+    raise ValueError('No JSON decoder generator for {}'.format(type(deftype)))
 
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.AnyValuedef)
@@ -106,13 +131,13 @@ def _(anyvalue):
 
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Primitivedef)
-def _(typedef):
+def _(primitivedef):
     return {
         'string': 'Json.Decode.string',
         'integer': 'Json.Decode.int',
         'float': 'Json.Decode.float',
         'number': 'Json.Decode.float',
-    }[typedef.type]
+    }[primitivedef.type]
 
 
 def _decoder_name(identifier):
@@ -126,7 +151,7 @@ def _(arraydef):
 
 @_def_to_json_decoder_type.register(swagger_to.intermediate.Objectdef)
 def _(objectdef):
-    return _decoder_name(objectdef.identifier)
+    return _decoder_name(objectdef.json_schema.identifier)
 
 
 @singledispatch
@@ -188,28 +213,10 @@ def _primitivedef_to_url_query_type(primitivedef):
         raise KeyError(f'parameters of type {primitivedef.type} are not supported as query parameters')
 
 
-# def _endpoint_url_params(endpoint):
-#     # TODO: Need to handle Maybe's correctly.
-#     query_parameters = [p for p in endpoint.parameters if p.in_what == 'query']
-#     return ', '.join(
-#         f'{_primitivedef_to_url_query_type(p.typedef)} "{p.name}" {_convert_to_camel_case(p.name)}'
-#         for p in query_parameters)
-
-# def _endpoint_query_param(parameter):
-#     query_type = _primitivedef_to_url_query_type(parameter.typedef)
-#     cc_name = _convert_to_camel_case(parameter.name)
-#     if parameter.required:
-#         return f'Just ({query_type} "{parameter.name}" {cc_name})'
-#     else:
-#         return f"""case {cc_name} of
-#     Just val -> Just ({query_type} "{parameter.name}" val)
-#     Nothing  -> Nothing""" 
-
-
 def _valid_elm(f):
     """Attempt to create a valid Elm identifier from a string.
 
-    This replaces illegal characters with legal onces. 
+    This replaces illegal characters with legal onces.
     """
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -224,7 +231,7 @@ def _valid_elm(f):
 
 @_valid_elm
 def _convert_to_pascal_case(value):
-    for separator in {'-', '.'}:
+    for separator in {'-', '.', ' '}:
         value = value.replace(separator, '_')
     elements = value.split('_')
     return ''.join(map(_upper_first_letter, elements))
