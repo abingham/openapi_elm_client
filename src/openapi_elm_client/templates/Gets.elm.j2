@@ -23,10 +23,13 @@
 {% endif %}
 {% endfor %}
             ] |> Maybe.Extra.values
+
+        decoder =
+            {{ json_decoder(endpoint.responses['200']) }}
     in
     Http.get
       { url = Url.Builder.relative [baseUrl, {{ endpoint | endpoint_url }}] queryParams 
-      , expect = Http.expectJson toMsg {{ endpoint.responses['200'].typedef | json_decoder }} 
+      , expect = Http.expectJson toMsg decoder 
       }
 {% endif %}
 {% endfor %}

@@ -8,22 +8,15 @@
 {{ endpoint.operation_id | camel_case }} : String -> {{ endpoint | endpoint_arg_types }} (Result Http.Error ({{ endpoint.responses['201'].typedef | elm_type}}) -> msg) -> Cmd msg
 {{ endpoint.operation_id | camel_case }} baseUrl {{ endpoint | endpoint_arg_names }} toMsg =
     let
-        payload =
-            Json.Encode.object
-                [ 
-{% for parameter in endpoint.parameters %}
-                    ("{{ parameter.name | camel_case }}", {{ parameter.typedef | json_encoder }} {{ parameter.name | camel_case}})
-{% endfor %}
-                    
-                -- ( "cameraId", Json.Encode.string (cameraId source) )
-                -- , ( "sourceName", Json.Encode.string (sourceName source) )
-                ]
+        {# TODO: Here we require one and only one body parameter. What is there are two? Zero? SHould we support non-body parameters? #}
+        payload = 
+            {{ endpoint.parameters[0].typedef | json_encoder }}
         body =
             Http.jsonBody payload
         url =
             Url.Builder.relative [ baseUrl, {{ endpoint | endpoint_url }} ] []
     in
-    Http.post { body = body, url = url, expect = Http.expectJson toMsg {{ endpoint.responses['201'].typedef | json_decoder }} }
+    Http.post { body = body, url = url, expect = Http.expectJson toMsg {{ endpoint.responses['201'].typedef }} | json_decoder }
 
 {% endif %}
 

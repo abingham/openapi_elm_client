@@ -1,9 +1,9 @@
 import logging
 from .elm_types import def_to_elm_type
 from .common import convert_to_camel_case, convert_to_pascal_case
-from .json import def_to_json_encoder_type, def_to_json_decoder_type
 from .function_names import def_to_function_name
 from .endpoints import endpoint_arg_names, endpoint_arg_types, endpoint_url, primitivedef_to_url_query_type
+from .json import typedef_to_encoder, typedef_to_decoder
 
 import swagger_to.intermediate
 from jinja2 import Environment, PackageLoader
@@ -38,8 +38,8 @@ def generate_elm_client(spec_file, module_name):
     env.filters['elm_type'] = def_to_elm_type
     env.filters['function_name'] = def_to_function_name
     # env.filters['elm_identifier'] = _def_to_identifier
-    env.filters['json_decoder'] = def_to_json_decoder_type
-    env.filters['json_encoder'] = def_to_json_encoder_type
+    env.filters['json_decoder'] = typedef_to_decoder
+    env.filters['json_encoder'] = typedef_to_encoder
     env.filters['endpoint_arg_types'] = endpoint_arg_types
     env.filters['endpoint_arg_names'] = endpoint_arg_names
     env.filters['endpoint_url'] = endpoint_url

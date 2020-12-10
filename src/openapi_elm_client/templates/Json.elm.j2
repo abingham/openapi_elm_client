@@ -1,0 +1,51 @@
+{% macro json_decoder(type_def) -%}
+{# Json.Decode.succeed {{ type_def | alias_name }}
+{% for property_def in type_def.properties.values() %}
+    {% if property_def.required %}
+        |> Json.Decode.Pipeline.required "{{ property_def.name }}" {{ json_decoder(property_def.typedef) }}
+    {% else %}
+        |> Json.Decode.Pipeline.optional "{{ property_def.name }}" (Json.Decode.nullable {{ json_decoder(property_def.typedef) }}) Nothing
+    {% endif %}
+{% endfor %} #}
+-- No decoder implementation for {{ type(type_def) }}
+{%- endmacro %}
+
+{# {% macro json_encoder(type_def) -%}
+{% if isinstance(type_def, Primitivedef) %}
+{{
+    {
+        'string': 'Json.Encode.string',
+        'integer': 'Json.Encode.int',
+        'float': 'Json.Encode.float',
+        'number': 'Json.Encode.float',
+    }[type_def]
+}}
+{% elif isinstance(type_def, Objectdef) %}
+[
+{% for property in type_def.properties.values() %}
+    {% if property.required %}
+        Just ("{{ property.name }}", {{ json_encoder(property.typedef)}} obj.{{ property.name | camel_case }})
+    {% else %}
+        case obj.{{ property.name | camel_case }} of
+            Just val -> Just ("{{ property.name }}", {{ json_encoder(property.typedef) }} obj.{{ property.name | camel_case }})
+            Nothing -> Nothing
+    {% endif %}
+{% endfor %}
+] |> Maybe.Extra.values |> Json.Encode.object
+{% else %}
+-- No encoder implementation for {{ type(type_def) }}
+{% endif %}
+{%- endmacro %} #}
+{# [
+{% for property_def in type_def.properties.values() %}
+{% if property_def.required %}
+    ("{{ property_def.name }}", {{ json_encoder(property_def.typedef) }} obj.{{ property_def.name | camel_case }})
+{% else %}
+{% endif %}
+{% endfor %}
+]
+{%- endmacro %}
+
+{% macro json_encoder(property) -%}
+{% if instance(property, )}
+{% endmacro %} #}
