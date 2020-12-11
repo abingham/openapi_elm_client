@@ -10,7 +10,8 @@ import Url.Builder
 -- Typedefs
 
 type alias Widget = 
-    { parts: List String
+    { widgetId: String
+    , size: Maybe (Int)
     }
 
 -- Remote calls
@@ -25,7 +26,7 @@ getWidgetsRequest baseUrl  toMsg =
             ] |> Maybe.Extra.values
 
         decoder =
-            ((Json.Decode.succeed Widget |> Json.Decode.Pipeline.required "parts" (Json.Decode.string |> Json.Decode.list)) |> Json.Decode.list)
+            ((Json.Decode.succeed Widget |> Json.Decode.Pipeline.required "widget_id" Json.Decode.string |> Json.Decode.Pipeline.optional "size" (Json.Decode.nullable Json.Decode.int) Nothing) |> Json.Decode.list)
     in
     Http.get
       { url = Url.Builder.relative [baseUrl, "api", "v1", "camera"] queryParams 

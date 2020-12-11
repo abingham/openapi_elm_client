@@ -1,0 +1,33 @@
+basePath: /api/v1/camera
+consumes:
+  - application/json
+definitions:
+  Widget:
+    properties:
+      widget_id:
+        type: string
+      size:
+        type: integer
+    required:
+      - widget_id
+info:
+  description: Testing
+  title: Testing
+  version: "1.0"
+paths:
+  /:
+    get:
+      operationId: get_widgets
+      responses:
+        200:
+          description: Success
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Widget"
+      summary: Returns a list of widgets
+produces:
+  - application/json
+swagger: "2.0"
+tags:
+  - name: test

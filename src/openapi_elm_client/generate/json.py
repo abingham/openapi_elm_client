@@ -98,6 +98,8 @@ def _(objectdef):
         for property in objectdef.properties.values():
             if property.required:
                 yield f'|> Json.Decode.Pipeline.required "{property.name}" {typedef_to_decoder(property.typedef)}'
+            else:
+                yield f'|> Json.Decode.Pipeline.optional "{property.name}" (Json.Decode.nullable {typedef_to_decoder(property.typedef)}) Nothing'
 
     parameters = ' '.join(make_parameters())
 

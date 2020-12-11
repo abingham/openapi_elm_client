@@ -2,7 +2,10 @@ module Test exposing (..)
 
 import Http
 import Json.Decode
+import Json.Encode
 import Json.Decode.Pipeline
+import Maybe.Extra
+import Url.Builder
 
 -- Typedefs
 
@@ -10,20 +13,25 @@ type alias Widget =
     { widgetId: String
     }
 
-
--- Decoders
-
-widgetDecoder : Json.Decode.Decoder Widget
-widgetDecoder = 
-    Json.Decode.succeed Widget
-            |> Json.Decode.Pipeline.required "widget_id" Json.Decode.string
-    
-
 -- Remote calls
-getWidgetsRequest : (Result Http.Error (List Widget) -> msg) -> Cmd msg
-getWidgetsRequest toMsg =
+
+-- GET endpoints
+
+
+getWidgetsRequest :  String ->  (Result Http.Error (List Widget) -> msg) -> Cmd msg
+getWidgetsRequest baseUrl  toMsg =
+    let
+        queryParams = [
+            ] |> Maybe.Extra.values
+
+        decoder =
+            ((Json.Decode.succeed Widget |> Json.Decode.Pipeline.required "widget_id" Json.Decode.string) |> Json.Decode.list)
+    in
     Http.get
-      { url = "/api/v1/camera/"
-      , expect = Http.expectJson toMsg (Json.Decode.list widgetDecoder) 
+      { url = Url.Builder.relative [baseUrl, "api", "v1", "camera"] queryParams 
+      , expect = Http.expectJson toMsg decoder 
       }
+
+-- POST endpoints
+
 
