@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='openapi_elm_client',
-    version="0.1.1",
+    version="0.2.0",
     packages=find_packages('src'),
 
     author='Austin Bingham',
