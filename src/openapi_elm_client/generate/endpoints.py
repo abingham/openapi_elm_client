@@ -35,7 +35,7 @@ def endpoint_url(endpoint):
 
         return f'"{component}"'
 
-    components = [c for c in endpoint.path.split('/') if c]
+    components = [c for c in endpoint.path.split('/')[1:]]
     return ', '.join(resolve_component(c) for c in components)
 
 

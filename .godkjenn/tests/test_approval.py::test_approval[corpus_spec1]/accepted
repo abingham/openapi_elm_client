@@ -28,7 +28,7 @@ getWidgetsRequest baseUrl  toMsg =
             ((Json.Decode.succeed Widget |> Json.Decode.Pipeline.required "parts" (Json.Decode.string |> Json.Decode.list)) |> Json.Decode.list)
     in
     Http.get
-      { url = Url.Builder.relative [baseUrl, "api", "v1", "camera"] queryParams 
+      { url = Url.Builder.relative [baseUrl, "api", "v1", "camera", ""] queryParams 
       , expect = Http.expectJson toMsg decoder 
       }
 
