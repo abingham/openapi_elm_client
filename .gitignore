@@ -1,5 +1,6 @@
 temp
 .vscode
+*code-workspace
 build
 dist
 *egg-info
