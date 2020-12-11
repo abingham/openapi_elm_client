@@ -1,0 +1,36 @@
+module Test exposing (..)
+
+import Http
+import Json.Decode
+import Json.Encode
+import Json.Decode.Pipeline
+import Maybe.Extra
+import Url.Builder
+
+-- Typedefs
+
+type alias Widget = 
+    { widgetId: String
+    }
+
+-- Remote calls
+
+-- GET endpoints
+
+
+-- POST endpoints
+
+
+widgetsNewWidget : String -> Maybe (Widget) -> (Result Http.Error (Widget) -> msg) -> Cmd msg
+widgetsNewWidget baseUrl widgetStuff toMsg =
+    let
+        payload = 
+            widgetStuff |> Maybe.andThen (\x -> Just ((\x -> [ Just ("widget_id", Json.Encode.string x.widgetId) ] |> Maybe.Extra.values |> Json.Encode.object) 'x')) |> Maybe.withDefault Json.Encode.null
+        body =
+            Http.jsonBody payload
+        url =
+            Url.Builder.relative [ baseUrl, "api", "v1", "widget", "" ] []
+    in
+    Http.post { body = body, url = url, expect = Http.expectJson toMsg (Json.Decode.succeed Widget |> Json.Decode.Pipeline.required "widget_id" Json.Decode.string) }
+
+
