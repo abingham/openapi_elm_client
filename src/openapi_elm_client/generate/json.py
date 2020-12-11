@@ -7,6 +7,7 @@ from functools import singledispatch
 import swagger_to.intermediate
 
 from .common import convert_to_camel_case, convert_to_pascal_case
+from .unique_names import unique_name
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,9 @@ def _(parameter):
     if parameter.required:
         return typedef_to_encoder(parameter.typedef)
 
-    return f"Maybe.andThen (\\x -> Just ({typedef_to_encoder(parameter.typedef)} 'x')) |> Maybe.withDefault Json.Encode.null"
+    obj_name = unique_name()
+
+    return f"Maybe.andThen (\\{obj_name} -> Just ({typedef_to_encoder(parameter.typedef)} {obj_name})) |> Maybe.withDefault Json.Encode.null"
 
 
 @typedef_to_encoder.register(swagger_to.intermediate.Primitivedef)
@@ -40,19 +43,21 @@ def _(primitivedef):
 
 @typedef_to_encoder.register(swagger_to.intermediate.Objectdef)
 def _(objectdef):
+    obj_name = unique_name()
+
     def make_properties():
         for property in objectdef.properties.values():
             if property.required:
-                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} x.{convert_to_camel_case(property.name)})'
+                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} {obj_name}.{convert_to_camel_case(property.name)})'
             else:
-                yield f"""case x.{convert_to_camel_case(property.name)} of
-                    Just val -> Just ("{property.name}", {typedef_to_encoder(property.typedef)} val)
+                val_name = unique_name()
+                yield f"""case {obj_name}.{convert_to_camel_case(property.name)} of
+                    Just {val_name} -> Just ("{property.name}", {typedef_to_encoder(property.typedef)} {val_name})
                     Nothing -> Nothing"""
 
     properties = ', '.join(make_properties())
 
-    # TODO: When we use variables like this, we should probably generate unique ones for each instance. Otherwise we might face collisions.
-    return f"(\\x -> [ {properties} ] |> Maybe.Extra.values |> Json.Encode.object)"
+    return f"(\\{obj_name} -> [ {properties} ] |> Maybe.Extra.values |> Json.Encode.object)"
 
 
 def _encoder_name(identifier):

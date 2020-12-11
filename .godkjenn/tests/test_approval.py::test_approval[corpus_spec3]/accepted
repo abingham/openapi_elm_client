@@ -25,7 +25,7 @@ widgetsNewWidget : String -> Maybe (Widget) -> (Result Http.Error (Widget) -> ms
 widgetsNewWidget baseUrl widgetStuff toMsg =
     let
         payload = 
-            widgetStuff |> Maybe.andThen (\x -> Just ((\x -> [ Just ("widget_id", Json.Encode.string x.widgetId) ] |> Maybe.Extra.values |> Json.Encode.object) 'x')) |> Maybe.withDefault Json.Encode.null
+            widgetStuff |> Maybe.andThen (\val0 -> Just ((\val1 -> [ Just ("widget_id", Json.Encode.string val1.widgetId) ] |> Maybe.Extra.values |> Json.Encode.object) val0)) |> Maybe.withDefault Json.Encode.null
         body =
             Http.jsonBody payload
         url =
