@@ -1,6 +1,9 @@
 """Functions for generating endpoint Elm functions.
 """
 import logging
+from functools import singledispatch
+
+from swagger_to.intermediate import Primitivedef
 
 from .common import convert_to_camel_case
 from .elm_types import def_to_elm_type
@@ -23,17 +26,34 @@ def endpoint_arg_names(endpoint):
 
 def endpoint_url(endpoint):
     path_parameters = [
-        p.name for p in endpoint.parameters if p.in_what == 'path']
+        p for p in endpoint.parameters if p.in_what == 'path']
 
     def resolve_component(component):
         for param in path_parameters:
-            if component == '{' + param + '}':
-                return convert_to_camel_case(param)
+            if component == '{' + param.name + '}':
+                return to_string_converter(param.typedef) + " " + convert_to_camel_case(param.name)
 
         return f'"{component}"'
 
     components = [c for c in endpoint.path.split('/') if c]
     return ', '.join(resolve_component(c) for c in components)
+
+
+
+@singledispatch
+def to_string_converter(typedef):
+    "Returns an Elm value-to-string conversion function for the typedef"
+    raise TypeError(f'No to-string converter for {typedef}')
+
+
+@to_string_converter.register(Primitivedef)
+def _(primitivedef):
+    return {
+        'string': '',
+        'integer': 'String.fromInt',
+        'number': 'String.fromFloat',
+        'float': 'String.fromFloat',
+    }[primitivedef.type]
 
 
 def primitivedef_to_url_query_type(primitivedef):
