@@ -24,8 +24,8 @@ def typedef_to_encoder(typedef):
 def _(parameter):
     if parameter.required:
         return typedef_to_encoder(parameter.typedef)
-    
-    return f"Maybe.andThen (\\x -> Just ({typedef_to_encoder(parameter.typedef, 'x')})) |> Maybe.withDefault Json.Encode.null"
+
+    return f"Maybe.andThen (\\x -> Just ({typedef_to_encoder(parameter.typedef)} 'x')) |> Maybe.withDefault Json.Encode.null"
 
 
 @typedef_to_encoder.register(swagger_to.intermediate.Primitivedef)
@@ -50,7 +50,7 @@ def _(objectdef):
                     Nothing -> Nothing"""
 
     properties = ', '.join(make_properties())
-    
+
     # TODO: When we use variables like this, we should probably generate unique ones for each instance. Otherwise we might face collisions.
     return f"(\\x -> [ {properties} ] |> Maybe.Extra.values |> Json.Encode.object)"
 
