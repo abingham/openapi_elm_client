@@ -13,7 +13,6 @@ type alias Widget =
     { widgetId: String
     }
 
--- Remote calls
 
 -- GET endpoints
 
