@@ -10,19 +10,19 @@ log = logging.getLogger(__name__)
 
 @singledispatch
 def def_to_elm_type(deftype):
-    raise TypeError('No elm-type converter for {}'.format(type(deftype)))
+    raise TypeError("No elm-type converter for {}".format(type(deftype)))
 
 
 @def_to_elm_type.register(swagger_to.intermediate.AnyValuedef)
 def _(anyvalue):
-    log.warning('No implementation of _def_to_elm_type for AnyValue')
+    log.warning("No implementation of _def_to_elm_type for AnyValue")
 
 
 @def_to_elm_type.register(swagger_to.intermediate.Propertydef)
 def _(propertydef):
     typename = def_to_elm_type(propertydef.typedef)
     if not propertydef.required:
-        typename = 'Maybe ({})'.format(typename)
+        typename = "Maybe ({})".format(typename)
     return typename
 
 
@@ -30,18 +30,15 @@ def _(propertydef):
 def _(parameter):
     typename = def_to_elm_type(parameter.typedef)
     if not parameter.required:
-        typename = 'Maybe ({})'.format(typename)
+        typename = "Maybe ({})".format(typename)
     return typename
 
 
 @def_to_elm_type.register(swagger_to.intermediate.Primitivedef)
 def _(primitivedef):
-    return {
-        'string': 'String',
-        'integer': 'Int',
-        'float': 'Float',
-        'number': 'Float'
-    }[primitivedef.type]
+    return {"string": "String", "integer": "Int", "float": "Float", "number": "Float"}[
+        primitivedef.type
+    ]
 
 
 @def_to_elm_type.register(swagger_to.intermediate.Arraydef)
@@ -54,9 +51,11 @@ def _(objectdef: swagger_to.intermediate.Objectdef):
     if objectdef.identifier:
         return objectdef.identifier
 
-    properties = (f"{property.name}: {def_to_elm_type(property)}"
-                  for property in objectdef.properties.values())
+    properties = (
+        f"{property.name}: {def_to_elm_type(property)}"
+        for property in objectdef.properties.values()
+    )
 
     properties = ", ".join(properties)
 
-    return "{" + properties + "}" 
+    return "{" + properties + "}"

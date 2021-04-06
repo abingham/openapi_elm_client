@@ -4,7 +4,7 @@
 _COUNTER = 0
 
 
-def unique_name(prefix='val'):
+def unique_name(prefix="val"):
     """Generate a unique name starting with the given prefix.
 
     Args:
@@ -18,7 +18,7 @@ def unique_name(prefix='val'):
     global _COUNTER
 
     if not prefix:
-        raise ValueError('Prefix can not be empty.')
+        raise ValueError("Prefix can not be empty.")
 
     result = prefix + str(_COUNTER)
     _COUNTER += 1

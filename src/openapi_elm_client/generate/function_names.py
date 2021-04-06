@@ -10,8 +10,7 @@ def def_to_function_name(typedef):
 
 @singledispatch
 def _def_to_function_name(typedef):
-    raise ValueError(
-        'No function name generator for {}'.format(type(typedef)))
+    raise ValueError("No function name generator for {}".format(type(typedef)))
 
 
 @_def_to_function_name.register(swagger_to.intermediate.Primitivedef)
