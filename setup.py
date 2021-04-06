@@ -32,7 +32,7 @@ setup(
     extras_require={
         "dev": ["black", "bumpversion"],
         # 'doc': ['sphinx', 'cartouche'],
-        "test": ["godkjenn>=4,<5", "pytest"],
+        "test": ["godkjenn>=4,<5", "pytest", "flake8"],
     },
     entry_points={
         "console_scripts": [
