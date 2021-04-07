@@ -52,8 +52,7 @@ def _(objectdef):
     def make_properties():
         for property in objectdef.properties.values():
             if property.required:
-                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} "\
-                    "{obj_name}.{convert_to_camel_case(property.name)})'
+                yield f'Just ("{property.name}", {typedef_to_encoder(property.typedef)} {obj_name}.{convert_to_camel_case(property.name)})'
             else:
                 val_name = unique_name()
                 yield f"""case {obj_name}.{convert_to_camel_case(property.name)} of
@@ -109,7 +108,7 @@ def _(objectdef):
             if property.required:
                 yield f'|> Json.Decode.Pipeline.required "{property.name}" {typedef_to_decoder(property.typedef)}'
             else:
-                yield f'|> Json.Decode.Pipeline.optional "{property.name}"' "(Json.Decode.nullable {typedef_to_decoder(property.typedef)}) Nothing"
+                yield f'|> Json.Decode.Pipeline.optional "{property.name}" (Json.Decode.nullable {typedef_to_decoder(property.typedef)}) Nothing'
 
     parameters = " ".join(make_parameters())
 
