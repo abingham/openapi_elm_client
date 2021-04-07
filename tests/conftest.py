@@ -7,6 +7,6 @@ CORPUS_DIR = THIS_DIR / "corpus"
 FULL_CORPUS = list(CORPUS_DIR.glob("*yaml"))
 
 
-@pytest.fixture(params=FULL_CORPUS)
+@pytest.fixture(params=FULL_CORPUS, ids=[c.name for c in FULL_CORPUS])
 def corpus_spec(request):
     yield request.param
