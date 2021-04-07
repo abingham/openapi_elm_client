@@ -41,4 +41,4 @@ jobs:
       - name: Debug diff
         if: ${{ failure() }}
         run: |
-          godkjenn -C tests diff "test_approval.py::test_approval[corpus_spec0]"
+          godkjenn -C tests diff "test_approval.py::test_approval[corpus_spec0]" text
