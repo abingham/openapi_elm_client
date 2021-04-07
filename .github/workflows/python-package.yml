@@ -48,7 +48,10 @@ jobs:
 
   publish:
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+    # NB: We only publish if a new tag has been pushed. Note that the workflow only triggers for certain tags, so we
+    # don't duplicate that matching here: if *any* tag has triggered the workflow, this job will run...we leave it to
+    # the 'on' clause at the top to pick the right tags.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
